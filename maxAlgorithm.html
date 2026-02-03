@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vertical lines – record highs</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, sans-serif;
+      background: #1a1a1e;
+      color: #e4e4e7;
+      padding: 1rem;
+    }
+    .layout {
+      display: flex;
+      flex-direction: column;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .viz-row {
+      display: flex;
+      flex-direction: row;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+    .viz-row .canvas-wrap {
+      flex: 1;
+      min-width: 0;
+    }
+    .sidebar {
+      flex-shrink: 0;
+      width: 380px;
+      padding: 1rem;
+      background: #27272a;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: #a1a1aa;
+    }
+    .sidebar-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+      color: #e4e4e7;
+    }
+    .sidebar p { margin: 0 0 0.75rem; }
+    .sidebar p:last-of-type { margin-bottom: 0.5rem; }
+    .sidebar pre + p { margin-top: 0.75rem; }
+    .sidebar-code {
+      margin: 0;
+      padding: 0.75rem;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      background: #1a1a1e;
+      border-radius: 4px;
+      overflow-x: auto;
+      color: #a1a1aa;
+    }
+    @media (max-width: 700px) {
+      .viz-row { flex-direction: column; }
+      .sidebar { width: 100%; }
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .count {
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .count span { color: #f87171; }
+    .subtitle {
+      margin: 0 0 0.75rem;
+      font-size: 0.9rem;
+      color: #a1a1aa;
+    }
+    .average {
+      font-variant-numeric: tabular-nums;
+    }
+    .average span { color: #a78bfa; }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 6px;
+      background: #3f3f46;
+      color: #e4e4e7;
+      cursor: pointer;
+    }
+    button:hover { background: #52525b; }
+    .canvas-wrap {
+      width: 100%;
+      max-width: 1000px;
+      min-height: 360px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #27272a;
+    }
+    #canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header class="header">
+      <h1>Finding the Max of 500 Random Numbers</h1>
+      <div class="controls">
+        <span class="count">Runs: <span id="runs">0</span></span>
+        <span class="count">Red dots: <span id="count">0</span></span>
+        <span class="average">Running average: <span id="average">—</span></span>
+        <span class="average">Avg. index of tallest: <span id="avgTallestIndex">—</span></span>
+        <button type="button" id="redraw">Redraw</button>
+      </div>
+    </header>
+    <div class="viz-row">
+      <div class="canvas-wrap">
+        <canvas id="canvas"></canvas>
+      </div>
+      <aside class="sidebar">
+        <h2 class="sidebar-title">What's Going On Here?</h2>
+        <p>To the left are 500 lines of random length. Starting from the left and going to the right, a red dot at the top of a line means that line is the tallest line seen so far. The first line always has a red dot, and the right-most red dot is the tallest line.</p>
+        <p>The red dots are how many times line A is executed by this min-finding algorithm:</p>
+        <pre class="sidebar-code">array = ... 500 random numbers ...
+maxSoFar = -1
+for i from 0 to 499:
+    if array[i] &gt; maxSoFar then
+        maxSoFar = array[i]  // line A</pre>
+        <p>What's striking is that even though there are 500 lines, the number of red dots is relatively small.</p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const NUM_LINES = 500;
+    const LINE_COLOR = '#71717a';
+    const DOT_COLOR = '#ef4444';
+    const DOT_RADIUS = 4;
+    const MAX_HEIGHT_SCALE = 0.82;
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const runsEl = document.getElementById('runs');
+    const countEl = document.getElementById('count');
+    const averageEl = document.getElementById('average');
+    const avgTallestIndexEl = document.getElementById('avgTallestIndex');
+    const redrawBtn = document.getElementById('redraw');
+
+    let heights = [];
+    let recordIndices = [];
+    let redDotHistory = [];
+    let tallestIndexHistory = [];
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const wrap = canvas.parentElement;
+      const w = wrap.clientWidth;
+      const h = wrap.clientHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      draw();
+    }
+
+    function generate() {
+      heights = [];
+      for (let i = 0; i < NUM_LINES; i++) {
+        heights.push(Math.random());
+      }
+      recordIndices = [];
+      let maxSoFar = -1;
+      for (let i = 0; i < NUM_LINES; i++) {
+        if (heights[i] > maxSoFar) {
+          maxSoFar = heights[i];
+          recordIndices.push(i);
+        }
+      }
+      countEl.textContent = recordIndices.length;
+      redDotHistory.push(recordIndices.length);
+      runsEl.textContent = redDotHistory.length;
+      const sum = redDotHistory.reduce((a, b) => a + b, 0);
+      const avg = sum / redDotHistory.length;
+      averageEl.textContent = avg.toFixed(2);
+      const tallestIndex = recordIndices[recordIndices.length - 1];
+      tallestIndexHistory.push(tallestIndex);
+      const idxSum = tallestIndexHistory.reduce((a, b) => a + b, 0);
+      const idxAvg = idxSum / tallestIndexHistory.length;
+      avgTallestIndexEl.textContent = idxAvg.toFixed(1);
+    }
+
+    function draw() {
+      const w = canvas.parentElement.clientWidth;
+      const h = canvas.parentElement.clientHeight;
+      const padding = 24;
+      const chartLeft = padding;
+      const chartRight = w - padding;
+      const chartBottom = h - padding;
+      const chartTop = padding;
+      const chartHeight = chartBottom - chartTop;
+      const chartWidth = chartRight - chartLeft;
+
+      ctx.clearRect(0, 0, w, h);
+
+      if (heights.length === 0) return;
+
+      const lineWidth = Math.max(1, chartWidth / NUM_LINES - 1);
+      const gap = chartWidth / NUM_LINES;
+      const recordSet = new Set(recordIndices);
+
+      for (let i = 0; i < NUM_LINES; i++) {
+        const x = chartLeft + (i + 0.5) * gap;
+        const norm = heights[i];
+        const lineHeight = norm * chartHeight * MAX_HEIGHT_SCALE;
+        const yBottom = chartBottom;
+        const yTop = chartBottom - lineHeight;
+
+        ctx.strokeStyle = LINE_COLOR;
+        ctx.lineWidth = Math.min(lineWidth, 2);
+        ctx.beginPath();
+        ctx.moveTo(x, yBottom);
+        ctx.lineTo(x, yTop);
+        ctx.stroke();
+
+        if (recordSet.has(i)) {
+          ctx.fillStyle = DOT_COLOR;
+          ctx.beginPath();
+          ctx.arc(x, yTop, DOT_RADIUS, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      if (recordIndices.length > 0) {
+        const lastIdx = recordIndices[recordIndices.length - 1];
+        const x = chartLeft + (lastIdx + 0.5) * gap;
+        const norm = heights[lastIdx];
+        const lineHeight = norm * chartHeight * MAX_HEIGHT_SCALE;
+        const yTop = chartBottom - lineHeight;
+        ctx.font = '12px system-ui, sans-serif';
+        ctx.fillStyle = '#e4e4e7';
+        ctx.textAlign = 'center';
+        ctx.fillText('tallest', x, yTop - DOT_RADIUS - 6);
+      }
+    }
+
+    function run() {
+      generate();
+      draw();
+    }
+
+    redrawBtn.addEventListener('click', run);
+    window.addEventListener('resize', resize);
+
+    resize();
+    run();
+  </script>
+</body>
+</html>
