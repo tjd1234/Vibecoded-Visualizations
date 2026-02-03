@@ -1,2 +1,2 @@
 # Vibecoded-Visualizations
-Visualizations and interactive toys by vibecoding: [Vibecoded Visualiztions website](https://tjd1234.github.io/vibedcode-visualizations/).
+Visualizations and interactive toys by vibecoding: [Vibecoded Visualiztions website](https://tjd1234.github.io/Vibecoded-Visualizations/).
