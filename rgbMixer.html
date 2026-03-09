@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RGB Sliders</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.05s;
+      font-family: 'Courier New', monospace;
+    }
+
+    .panel {
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 16px;
+      padding: 36px 48px;
+      min-width: 360px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .label {
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+      font-size: 1rem;
+      font-weight: bold;
+      width: 14px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      border: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4);
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.4);
+      cursor: pointer;
+      border: none;
+    }
+
+    #slider-r { background: linear-gradient(to right, #000, #ff0000); }
+    #slider-g { background: linear-gradient(to right, #000, #00ff00); }
+    #slider-b { background: linear-gradient(to right, #000, #0000ff); }
+
+    .value {
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+      font-size: 1rem;
+      width: 34px;
+      text-align: right;
+    }
+
+    .color-display {
+      margin-top: 28px;
+      text-align: center;
+      color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+    }
+
+    #rgb-text {
+      font-size: 1.3rem;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+    }
+
+    .swatch {
+      display: inline-block;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.7);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      margin-bottom: 10px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h1>RGB COLOR MIXER</h1>
+
+    <div class="slider-row">
+      <span class="label">R</span>
+      <input type="range" id="slider-r" min="0" max="255" value="128">
+      <span class="value" id="val-r">128</span>
+    </div>
+
+    <div class="slider-row">
+      <span class="label">G</span>
+      <input type="range" id="slider-g" min="0" max="255" value="64">
+      <span class="value" id="val-g">64</span>
+    </div>
+
+    <div class="slider-row">
+      <span class="label">B</span>
+      <input type="range" id="slider-b" min="0" max="255" value="192">
+      <span class="value" id="val-b">192</span>
+    </div>
+
+    <div class="color-display">
+      <div><span class="swatch" id="swatch"></span></div>
+      <div id="rgb-text">rgb(128, 64, 192)</div>
+    </div>
+  </div>
+
+  <script>
+    const sliderR = document.getElementById('slider-r');
+    const sliderG = document.getElementById('slider-g');
+    const sliderB = document.getElementById('slider-b');
+    const valR = document.getElementById('val-r');
+    const valG = document.getElementById('val-g');
+    const valB = document.getElementById('val-b');
+    const rgbText = document.getElementById('rgb-text');
+    const swatch = document.getElementById('swatch');
+
+    function update() {
+      const r = parseInt(sliderR.value);
+      const g = parseInt(sliderG.value);
+      const b = parseInt(sliderB.value);
+
+      // Update display values
+      valR.textContent = r;
+      valG.textContent = g;
+      valB.textContent = b;
+
+      const color = `rgb(${r}, ${g}, ${b})`;
+      document.body.style.backgroundColor = color;
+      swatch.style.backgroundColor = color;
+      rgbText.textContent = color;
+
+      // Update slider track gradients to reflect current sibling values
+      sliderR.style.background = `linear-gradient(to right, rgb(0,${g},${b}), rgb(255,${g},${b}))`;
+      sliderG.style.background = `linear-gradient(to right, rgb(${r},0,${b}), rgb(${r},255,${b}))`;
+      sliderB.style.background = `linear-gradient(to right, rgb(${r},${g},0), rgb(${r},${g},255))`;
+    }
+
+    sliderR.addEventListener('input', update);
+    sliderG.addEventListener('input', update);
+    sliderB.addEventListener('input', update);
+
+    update();
+  </script>
+</body>
+</html>
