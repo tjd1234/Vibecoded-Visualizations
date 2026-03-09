@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selection Sort Visualizer</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-family: 'Courier New', Courier, monospace;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+h1 {
+  text-align: center;
+  color: #89b4fa;
+  font-size: 1.6rem;
+  margin-bottom: 22px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Top panels ── */
+.top-panels {
+  display: flex;
+  gap: 16px;
+  max-width: 860px;
+  margin: 0 auto 20px;
+}
+
+.panel {
+  background: #313244;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.panel-title {
+  font-size: 0.78rem;
+  color: #89b4fa;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #45475a;
+}
+
+/* Pseudocode */
+.pseudo-panel { flex: 1; }
+
+.code-line {
+  font-size: 0.88rem;
+  padding: 5px 8px;
+  border-radius: 5px;
+  white-space: pre;
+  line-height: 1.65;
+  color: #a6adc8;
+  transition: background 0.15s, color 0.15s;
+}
+
+.code-line.active {
+  background: #f9e2af;
+  color: #1e1e2e;
+  font-weight: bold;
+}
+
+/* Variables */
+.vars-panel { width: 176px; flex-shrink: 0; }
+
+.var-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid #45475a;
+}
+.var-row:last-child { border-bottom: none; }
+.var-name { color: #cba6f7; font-size: 0.9rem; }
+.var-val  { color: #a6e3a1; font-size: 0.95rem; font-weight: bold; min-width: 36px; text-align: right; }
+
+/* ── Array section ── */
+.array-section {
+  max-width: 860px;
+  margin: 0 auto 20px;
+}
+
+.array-track {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 0;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.box {
+  width: 66px;
+  height: 66px;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: bold;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.box.unsorted { background: #c0526f; color: #fff; border-color: #c0526f; }
+.box.sorted   { background: #40a02b; color: #fff; border-color: #40a02b; }
+
+/* current j being scanned — yellow */
+.box.active {
+  border-color: #f9e2af !important;
+  box-shadow: 0 0 0 3px #f9e2af55;
+}
+
+/* current minimum (min_idx) — orange */
+.box.is-min {
+  border-color: #fab387 !important;
+  box-shadow: 0 0 0 3px #fab38755;
+}
+
+.cell-idx {
+  font-size: 0.72rem;
+  color: #6c7086;
+}
+
+/* ── Sorted/unsorted divider ── */
+.sort-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.div-line {
+  width: 3px;
+  height: 66px;
+  background: #cdd6f4;
+  border-radius: 2px;
+  opacity: 0.6;
+}
+.div-label {
+  font-size: 0.65rem;
+  color: #cdd6f4;
+  opacity: 0.6;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* ── Controls ── */
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 860px;
+  margin: 0 auto 12px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: bold;
+  padding: 10px 28px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: opacity 0.15s, transform 0.1s;
+}
+button:active:not(:disabled) { transform: scale(0.97); }
+button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+#step-btn    { background: #89b4fa; color: #1e1e2e; }
+#step-btn:hover:not(:disabled) { background: #b4d0fe; }
+#restart-btn { background: #f38ba8; color: #1e1e2e; }
+#restart-btn:hover { background: #f5a0b8; }
+
+/* ── Status ── */
+.status-bar {
+  max-width: 860px;
+  margin: 0 auto 16px;
+  text-align: center;
+  min-height: 22px;
+  font-size: 0.88rem;
+  color: #a6adc8;
+}
+.status-bar.done { color: #a6e3a1; font-weight: bold; }
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  max-width: 860px;
+  margin: 0 auto;
+  font-size: 0.76rem;
+  color: #6c7086;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-box  {
+  width: 16px; height: 16px;
+  border-radius: 3px;
+  border: 2px solid transparent;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.lg-sorted   { background: #40a02b; border-color: #40a02b; }
+.lg-unsorted { background: #c0526f; border-color: #c0526f; }
+.lg-active   { background: #45475a; border-color: #f9e2af; }
+.lg-min      { background: #45475a; border-color: #fab387; }
+</style>
+</head>
+<body>
+
+<h1>Selection Sort Visualizer</h1>
+
+<div class="top-panels">
+  <div class="panel pseudo-panel">
+    <div class="panel-title">Pseudocode</div>
+    <div id="pseudocode"></div>
+  </div>
+  <div class="panel vars-panel">
+    <div class="panel-title">Variables</div>
+    <div id="variables"></div>
+  </div>
+</div>
+
+<div class="array-section">
+  <div class="array-track" id="array-display"></div>
+</div>
+
+<div class="controls">
+  <button id="step-btn">&#9654; Step</button>
+  <button id="restart-btn">&#8635; Restart</button>
+</div>
+
+<div class="status-bar" id="status"></div>
+
+<div class="legend">
+  <div class="legend-item"><span class="legend-box lg-sorted"></span>correct position</div>
+  <div class="legend-item"><span class="legend-box lg-unsorted"></span>not yet sorted</div>
+  <div class="legend-item"><span class="legend-box lg-active"></span>current j (scanning)</div>
+  <div class="legend-item"><span class="legend-box lg-min"></span>current minimum (min_idx)</div>
+</div>
+
+<script>
+const LINES = [
+  'for i from 0 to len(arr) - 2:',
+  '    min_idx = i',
+  '    for j from i + 1 to len(arr) - 1:',
+  '        if arr[j] < arr[min_idx]:',
+  '            min_idx = j',
+  '    swap arr[i] and arr[min_idx]',
+];
+
+// Algorithm state
+let arr, sortedArr, n;
+let algI, algJ, algMin;
+let curLine, isDone, active;
+
+function randInt(lo, hi) {
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+}
+
+function makeArr(size) {
+  const seen = new Set();
+  while (seen.size < size) seen.add(randInt(10, 99));
+  return [...seen];
+}
+
+function init() {
+  arr       = makeArr(10);
+  sortedArr = [...arr].sort((a, b) => a - b);
+  n         = arr.length;
+  algI      = 0;
+  algJ      = undefined;
+  algMin    = undefined;
+  curLine   = 0;
+  isDone    = false;
+  active    = new Set();
+
+  document.getElementById('step-btn').disabled = false;
+  document.getElementById('status').className  = 'status-bar';
+  render('Click Step to begin stepping through the algorithm.');
+}
+
+function step() {
+  if (isDone) return;
+
+  active = new Set();
+  let msg = '';
+
+  switch (curLine) {
+
+    case 0: // for i from 0 to len(arr) - 2:
+      if (algI < n - 1) {
+        msg = `Outer loop: i = ${algI}, will find minimum in arr[${algI}..${n - 1}]`;
+        curLine = 1;
+      } else {
+        msg = 'Outer loop finished \u2014 array is fully sorted!';
+        isDone  = true;
+        curLine = -1;
+        document.getElementById('step-btn').disabled = true;
+      }
+      break;
+
+    case 1: // min_idx = i
+      algMin = algI;
+      algJ   = algI + 1;    // also initialises the inner loop variable
+      active.add(algI);
+      msg     = `Assume arr[${algI}] = ${arr[algI]} is the minimum so far: min_idx = ${algMin}`;
+      curLine = 2;
+      break;
+
+    case 2: // for j from i + 1 to len(arr) - 1:
+      if (algJ < n) {
+        active.add(algJ);
+        msg     = `Inner loop: j = ${algJ} (< ${n}), check arr[${algJ}] = ${arr[algJ]} vs min arr[${algMin}] = ${arr[algMin]}`;
+        curLine = 3;
+      } else {
+        msg     = `Inner loop done: minimum is arr[${algMin}] = ${arr[algMin]}`;
+        curLine = 5;
+      }
+      break;
+
+    case 3: // if arr[j] < arr[min_idx]:
+      active.add(algJ);
+      if (arr[algJ] < arr[algMin]) {
+        msg     = `arr[${algJ}] = ${arr[algJ]} < arr[${algMin}] = ${arr[algMin]} \u2192 new minimum found`;
+        curLine = 4;
+      } else {
+        msg     = `arr[${algJ}] = ${arr[algJ]} \u2265 arr[${algMin}] = ${arr[algMin]} \u2192 min_idx stays ${algMin}`;
+        algJ++;
+        curLine = 2;
+      }
+      break;
+
+    case 4: // min_idx = j
+      algMin = algJ;
+      active.add(algMin);
+      msg     = `Update: min_idx = ${algMin} (arr[${algMin}] = ${arr[algMin]} is the new minimum)`;
+      algJ++;
+      curLine = 2;
+      break;
+
+    case 5: { // swap arr[i] and arr[min_idx]
+      const valI   = arr[algI];
+      const valMin = arr[algMin];
+      arr[algI]    = valMin;
+      arr[algMin]  = valI;
+      active.add(algI);
+      active.add(algMin);
+      if (algI === algMin) {
+        msg = `arr[${algI}] = ${valI} is already the minimum \u2014 no swap needed`;
+      } else {
+        msg = `Swap: ${valMin} \u2192 index ${algI},  ${valI} \u2192 index ${algMin}`;
+      }
+      algMin  = undefined;
+      algI++;
+      curLine = 0;
+      break;
+    }
+  }
+
+  render(msg);
+}
+
+/* ── Render ── */
+
+function render(msg) {
+  renderCode();
+  renderVars();
+  renderArray();
+  const statusEl = document.getElementById('status');
+  statusEl.textContent = msg;
+  statusEl.className = 'status-bar' + (isDone ? ' done' : '');
+}
+
+function renderCode() {
+  document.getElementById('pseudocode').innerHTML =
+    LINES.map((line, idx) =>
+      `<div class="code-line${idx === curLine ? ' active' : ''}">${line}</div>`
+    ).join('');
+}
+
+function renderVars() {
+  const fmt = v => (v === undefined ? '\u2014' : String(v));
+  document.getElementById('variables').innerHTML = `
+    <div class="var-row"><span class="var-name">i</span>      <span class="var-val">${fmt(algI)}</span></div>
+    <div class="var-row"><span class="var-name">j</span>      <span class="var-val">${fmt(algJ)}</span></div>
+    <div class="var-row"><span class="var-name">min_idx</span><span class="var-val">${fmt(algMin)}</span></div>
+    <div class="var-row"><span class="var-name">n</span>      <span class="var-val">${n}</span></div>
+  `;
+}
+
+function renderArray() {
+  // Show min_idx highlight during lines 1–4 (inner loop in progress)
+  const showMin = !isDone && algMin !== undefined && curLine >= 1 && curLine <= 4;
+
+  const cells = arr.map((val, idx) => {
+    const inPlace = isDone || val === sortedArr[idx];
+    let cls = 'box ' + (inPlace ? 'sorted' : 'unsorted');
+    if (active.has(idx)) cls += ' active';
+    if (showMin && idx === algMin) cls += ' is-min';
+    return `<div class="cell"><div class="${cls}">${val}</div><div class="cell-idx">[${idx}]</div></div>`;
+  });
+
+  // Divider between confirmed-sorted (0..i-1) and unsorted (i..n-1)
+  if (!isDone && algI > 0 && algI < n) {
+    const divider = `<div class="sort-divider"><div class="div-line"></div><div class="div-label">i=${algI}</div></div>`;
+    cells.splice(algI, 0, divider);
+  }
+
+  document.getElementById('array-display').innerHTML = cells.join('');
+}
+
+document.getElementById('step-btn').addEventListener('click', step);
+document.getElementById('restart-btn').addEventListener('click', init);
+
+init();
+</script>
+</body>
+</html>
