@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selection Sort Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 3rem;
+      gap: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.03em;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 2px solid;
+      flex-shrink: 0;
+    }
+
+    .swatch-current { border-color: #3b82f6; background: #dbeafe; }
+    .swatch-min     { border-color: #f59e0b; background: #fef3c7; }
+    .swatch-both    { border-color: #8b5cf6; background: #ede9fe; }
+    .swatch-sorted  { border-color: #10b981; background: #d1fae5; }
+
+    .section {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .section-header {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+
+    .list-box {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      padding: 14px 14px 10px;
+      min-height: 100px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .empty-msg {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      font-style: italic;
+      align-self: center;
+    }
+
+    .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .number {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-radius: 10px;
+      border: 2.5px solid #e2e8f0;
+      background: #f8fafc;
+      color: #475569;
+      transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+
+    .number.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .number.min {
+      border-color: #f59e0b;
+      background: #fef3c7;
+      color: #b45309;
+    }
+
+    .number.both {
+      border-color: #8b5cf6;
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
+    .number.will-move {
+      border-color: #f59e0b;
+      background: #fef3c7;
+      color: #b45309;
+      box-shadow: 0 0 0 4px #fde68a;
+      animation: levitate 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes levitate {
+      from { transform: translateY(0px);  box-shadow: 0 0 0 4px #fde68a; }
+      to   { transform: translateY(-6px); box-shadow: 0 8px 14px rgba(245,158,11,0.25), 0 0 0 4px #fde68a; }
+    }
+
+    .number.sorted {
+      border-color: #10b981;
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .pointer {
+      height: 18px;
+      font-size: 0.85rem;
+      color: #3b82f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+
+    .status {
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      color: #475569;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+    }
+
+    .status.complete {
+      background: #d1fae5;
+      border-color: #6ee7b7;
+      color: #065f46;
+      font-weight: 600;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 28px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active:not(:disabled) { transform: scale(0.96); }
+
+    #step-btn { background: #3b82f6; color: white; }
+    #step-btn:hover:not(:disabled) { background: #2563eb; }
+    #step-btn:disabled { background: #94a3b8; cursor: default; }
+
+    #reset-btn { background: #e2e8f0; color: #334155; }
+    #reset-btn:hover { background: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <h1>Selection Sort</h1>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-swatch swatch-current"></div>Arrow position
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch swatch-min"></div>Min so far
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch swatch-both"></div>Arrow = Min
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch swatch-sorted"></div>Sorted
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Unsorted</div>
+    <div class="list-box" id="unsorted-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Sorted</div>
+    <div class="list-box" id="sorted-list"></div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="controls">
+    <button id="step-btn">Step</button>
+    <button id="reset-btn">Reset</button>
+  </div>
+
+  <script>
+    let unsorted  = [];
+    let sorted    = [];
+    let scanIdx   = 0;
+    let minIdx    = 0;
+    let phase     = 'scanning'; // 'scanning' | 'moving' | 'done'
+    let animating = false;
+
+    function rand(lo, hi) {
+      return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+    }
+
+    function init() {
+      animating = false;
+      document.querySelectorAll('.flying-clone').forEach(el => el.remove());
+      unsorted = Array.from({ length: 10 }, () => rand(1, 99));
+      sorted   = [];
+      scanIdx  = 0;
+      minIdx   = 0;
+      phase    = 'scanning';
+      render();
+    }
+
+    function step() {
+      if (phase === 'done' || animating) return;
+
+      if (phase === 'moving') {
+        animateMoveToSorted();
+        return;
+      }
+
+      // Advance the scan pointer by one step
+      scanIdx++;
+      if (scanIdx < unsorted.length) {
+        if (unsorted[scanIdx] < unsorted[minIdx]) minIdx = scanIdx;
+      }
+      if (scanIdx >= unsorted.length - 1) phase = 'moving';
+
+      render();
+    }
+
+    function animateMoveToSorted() {
+      animating = true;
+
+      // Capture source rect before any DOM changes
+      const sourceEl = document.querySelector('#unsorted-list .number.will-move');
+      if (!sourceEl) { animating = false; return; }
+      const srcRect = sourceEl.getBoundingClientRect();
+
+      // Update state
+      const val = unsorted.splice(minIdx, 1)[0];
+      sorted.push(val);
+      if (unsorted.length === 0) {
+        phase = 'done';
+      } else {
+        scanIdx = 0;
+        minIdx  = 0;
+        phase   = 'scanning';
+      }
+
+      // Render new state with the landing slot invisible
+      render({ hideLast: true });
+
+      // Get target rect from the newly rendered (hidden) sorted element
+      const sortedCells = document.querySelectorAll('#sorted-list .cell');
+      const targetEl = sortedCells.length
+        ? sortedCells[sortedCells.length - 1].querySelector('.number')
+        : null;
+      if (!targetEl) { animating = false; render(); return; }
+
+      const tgtRect = targetEl.getBoundingClientRect();
+      targetEl.style.visibility = 'hidden';
+
+      const dx = tgtRect.left - srcRect.left;
+      const dy = tgtRect.top  - srcRect.top;
+
+      // Build a clone that looks exactly like the bouncing element (but no CSS bounce)
+      const clone = document.createElement('div');
+      clone.className = 'flying-clone';
+      clone.textContent = val;
+      Object.assign(clone.style, {
+        position:       'fixed',
+        left:           srcRect.left + 'px',
+        top:            srcRect.top  + 'px',
+        width:          srcRect.width  + 'px',
+        height:         srcRect.height + 'px',
+        margin:         '0',
+        zIndex:         '1000',
+        pointerEvents:  'none',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        fontSize:       '1.2rem',
+        fontWeight:     '700',
+        borderRadius:   '10px',
+        border:         '2.5px solid #f59e0b',
+        background:     '#fef3c7',
+        color:          '#b45309',
+        boxShadow:      '0 0 0 4px #fde68a',
+      });
+      document.body.appendChild(clone);
+
+      // Arc: lift up and across, then drop into the sorted slot
+      const anim = clone.animate([
+        { transform: 'translate(0px, 0px)',                         offset: 0    },
+        { transform: `translate(${dx * 0.5}px, -65px)`,            offset: 0.42 },
+        { transform: `translate(${dx}px, ${dy}px)`,                offset: 1    },
+      ], {
+        duration: 680,
+        easing:   'ease-in-out',
+        fill:     'forwards',
+      });
+
+      anim.onfinish = () => {
+        clone.remove();
+        targetEl.style.visibility = 'visible';
+        animating = false;
+      };
+    }
+
+    function render(opts = {}) {
+      const uList   = document.getElementById('unsorted-list');
+      const sList   = document.getElementById('sorted-list');
+      const stat    = document.getElementById('status');
+      const stepBtn = document.getElementById('step-btn');
+
+      // --- Unsorted list ---
+      uList.innerHTML = '';
+      if (phase === 'done' || unsorted.length === 0) {
+        uList.innerHTML = '<span class="empty-msg">empty — all moved to sorted</span>';
+      } else {
+        unsorted.forEach((val, i) => {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          const num = document.createElement('div');
+          num.className = 'number';
+          num.textContent = val;
+
+          if (phase === 'scanning') {
+            if (i === scanIdx && i === minIdx) num.classList.add('both');
+            else if (i === scanIdx)            num.classList.add('current');
+            else if (i === minIdx)             num.classList.add('min');
+          } else if (phase === 'moving' && i === minIdx) {
+            num.classList.add('will-move');
+          }
+
+          const ptr = document.createElement('div');
+          ptr.className = 'pointer';
+          if (phase === 'scanning' && i === scanIdx) ptr.textContent = '▲';
+
+          cell.appendChild(num);
+          cell.appendChild(ptr);
+          uList.appendChild(cell);
+        });
+      }
+
+      // --- Sorted list ---
+      sList.innerHTML = '';
+      if (sorted.length === 0) {
+        sList.innerHTML = '<span class="empty-msg">empty</span>';
+      } else {
+        sorted.forEach((val, i) => {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          const num = document.createElement('div');
+          num.className = 'number sorted';
+          num.textContent = val;
+
+          // Hide the landing slot so the flying clone can reveal it on arrival
+          if (opts.hideLast && i === sorted.length - 1) {
+            num.style.visibility = 'hidden';
+          }
+
+          cell.appendChild(num);
+          sList.appendChild(cell);
+        });
+      }
+
+      // --- Status bar ---
+      stat.className = 'status';
+      if (phase === 'done') {
+        stat.className = 'status complete';
+        stat.textContent = '✓ All done! The list is fully sorted.';
+        stepBtn.disabled = true;
+      } else if (phase === 'scanning') {
+        stat.textContent =
+          `Scanning index ${scanIdx} — current min: ${unsorted[minIdx]} (at index ${minIdx})`;
+        stepBtn.disabled = false;
+      } else {
+        stat.textContent =
+          `Found minimum: ${unsorted[minIdx]} — click Step to move it to the sorted list.`;
+        stepBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('step-btn').addEventListener('click', step);
+    document.getElementById('reset-btn').addEventListener('click', init);
+
+    init();
+  </script>
+</body>
+</html>

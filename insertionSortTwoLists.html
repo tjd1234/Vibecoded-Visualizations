@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insertion Sort Visualizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 3rem;
+      gap: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.03em;
+    }
+
+    .legend {
+      display: flex;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 2px solid;
+      flex-shrink: 0;
+    }
+
+    .swatch-key     { border-color: #8b5cf6; background: #f5f3ff; }
+    .swatch-compare { border-color: #3b82f6; background: #dbeafe; }
+    .swatch-shift   { border-color: #f97316; background: #fff7ed; }
+    .swatch-sorted  { border-color: #10b981; background: #d1fae5; }
+
+    .section {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .section-header {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+
+    .list-box {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      padding: 14px 14px 10px;
+      min-height: 100px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .empty-msg {
+      color: #cbd5e1;
+      font-size: 0.9rem;
+      font-style: italic;
+      align-self: center;
+    }
+
+    .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .number {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      font-weight: 700;
+      border-radius: 10px;
+      border: 2.5px solid #e2e8f0;
+      background: #f8fafc;
+      color: #475569;
+      transition: border-color 0.15s, background 0.15s, color 0.15s, box-shadow 0.15s;
+    }
+
+    /* Key: element currently being inserted */
+    .number.key {
+      border-color: #8b5cf6;
+      background: #f5f3ff;
+      color: #5b21b6;
+    }
+
+    /* Current comparison element in sorted */
+    .number.compare {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    /* Elements in sorted confirmed > key; will shift right */
+    .number.will-shift {
+      border-color: #f97316;
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    /* Key ready to fly — bounces purple like the key highlight */
+    .number.will-move {
+      border-color: #8b5cf6;
+      background: #f5f3ff;
+      color: #5b21b6;
+      box-shadow: 0 0 0 4px #ddd6fe;
+      animation: levitate 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes levitate {
+      from { transform: translateY(0px);  box-shadow: 0 0 0 4px #ddd6fe; }
+      to   { transform: translateY(-6px); box-shadow: 0 8px 14px rgba(139,92,246,0.2), 0 0 0 4px #ddd6fe; }
+    }
+
+    .number.sorted-item {
+      border-color: #10b981;
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .pointer {
+      height: 18px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+
+    /* Arrow colour matches what it points at */
+    .pointer.key-ptr     { color: #8b5cf6; }
+    .pointer.compare-ptr { color: #3b82f6; }
+
+    .status {
+      width: 100%;
+      max-width: 800px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      color: #475569;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+    }
+
+    .status.complete {
+      background: #d1fae5;
+      border-color: #6ee7b7;
+      color: #065f46;
+      font-weight: 600;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 28px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active:not(:disabled) { transform: scale(0.96); }
+
+    #step-btn { background: #3b82f6; color: white; }
+    #step-btn:hover:not(:disabled) { background: #2563eb; }
+    #step-btn:disabled { background: #94a3b8; cursor: default; }
+
+    #reset-btn { background: #e2e8f0; color: #334155; }
+    #reset-btn:hover { background: #cbd5e1; }
+  </style>
+</head>
+<body>
+  <h1>Insertion Sort</h1>
+
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-swatch swatch-key"></div>Key
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch swatch-compare"></div>Comparing
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch swatch-shift"></div>Will shift right
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch swatch-sorted"></div>Sorted
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Unsorted</div>
+    <div class="list-box" id="unsorted-list"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">Sorted</div>
+    <div class="list-box" id="sorted-list"></div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="controls">
+    <button id="step-btn">Step</button>
+    <button id="reset-btn">Reset</button>
+  </div>
+
+  <script>
+    let unsorted  = [];
+    let sorted    = [];
+    let scanIdx   = 0;   // index in sorted currently being compared (right-to-left scan)
+    let insertPos = 0;   // where key will be inserted into sorted
+    let phase     = 'idle'; // 'idle' | 'scanning' | 'inserting' | 'done'
+    let animating = false;
+
+    function rand(lo, hi) {
+      return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+    }
+
+    function init() {
+      animating = false;
+      document.querySelectorAll('.flying-clone').forEach(el => el.remove());
+      unsorted  = Array.from({ length: 10 }, () => rand(1, 99));
+      sorted    = [];
+      scanIdx   = 0;
+      insertPos = 0;
+      phase     = 'idle';
+      render();
+    }
+
+    function step() {
+      if (phase === 'done' || animating) return;
+
+      if (phase === 'inserting') {
+        animateMoveToSorted();
+        return;
+      }
+
+      if (phase === 'idle') {
+        // Pick unsorted[0] as the key
+        if (sorted.length === 0) {
+          // Nothing to compare against — insert at front directly
+          insertPos = 0;
+          phase = 'inserting';
+        } else {
+          // Start scanning from the rightmost element of sorted
+          scanIdx = sorted.length - 1;
+          phase = 'scanning';
+        }
+        render();
+        return;
+      }
+
+      // phase === 'scanning': compare sorted[scanIdx] with key (unsorted[0])
+      const keyVal = unsorted[0];
+      if (sorted[scanIdx] > keyVal) {
+        if (scanIdx === 0) {
+          // Key is smaller than every sorted element — insert at front
+          insertPos = 0;
+          phase = 'inserting';
+        } else {
+          scanIdx--; // keep scanning left
+        }
+      } else {
+        // sorted[scanIdx] <= key: insert just after this position
+        insertPos = scanIdx + 1;
+        phase = 'inserting';
+      }
+      render();
+    }
+
+    function animateMoveToSorted() {
+      animating = true;
+
+      // Capture source position before any DOM changes
+      const sourceEl = document.querySelector('#unsorted-list .number.will-move');
+      if (!sourceEl) { animating = false; return; }
+      const srcRect = sourceEl.getBoundingClientRect();
+
+      // Commit the move in state
+      const val = unsorted.shift();
+      sorted.splice(insertPos, 0, val);
+      phase = unsorted.length === 0 ? 'done' : 'idle';
+
+      // Render new state — hide the landing slot so the clone can fly into it
+      render({ hideAt: insertPos });
+
+      // Find the hidden landing slot's position
+      const sortedCells = document.querySelectorAll('#sorted-list .cell');
+      const targetEl = sortedCells[insertPos]?.querySelector('.number') ?? null;
+      if (!targetEl) { animating = false; render(); return; }
+
+      const tgtRect = targetEl.getBoundingClientRect();
+      targetEl.style.visibility = 'hidden';
+
+      const dx = tgtRect.left - srcRect.left;
+      const dy = tgtRect.top  - srcRect.top;
+
+      // Flying clone — purple to match key/will-move colours
+      const clone = document.createElement('div');
+      clone.className = 'flying-clone';
+      clone.textContent = val;
+      Object.assign(clone.style, {
+        position:       'fixed',
+        left:           srcRect.left + 'px',
+        top:            srcRect.top  + 'px',
+        width:          srcRect.width  + 'px',
+        height:         srcRect.height + 'px',
+        margin:         '0',
+        zIndex:         '1000',
+        pointerEvents:  'none',
+        display:        'flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        fontSize:       '1.2rem',
+        fontWeight:     '700',
+        borderRadius:   '10px',
+        border:         '2.5px solid #8b5cf6',
+        background:     '#f5f3ff',
+        color:          '#5b21b6',
+        boxShadow:      '0 0 0 4px #ddd6fe',
+      });
+      document.body.appendChild(clone);
+
+      // Arc: lift up and across, then drop into the landing slot
+      const anim = clone.animate([
+        { transform: 'translate(0px, 0px)',              offset: 0    },
+        { transform: `translate(${dx * 0.5}px, -65px)`, offset: 0.42 },
+        { transform: `translate(${dx}px, ${dy}px)`,     offset: 1    },
+      ], {
+        duration: 680,
+        easing:   'ease-in-out',
+        fill:     'forwards',
+      });
+
+      anim.onfinish = () => {
+        clone.remove();
+        targetEl.style.visibility = 'visible';
+        animating = false;
+      };
+    }
+
+    function render(opts = {}) {
+      const uList   = document.getElementById('unsorted-list');
+      const sList   = document.getElementById('sorted-list');
+      const stat    = document.getElementById('status');
+      const stepBtn = document.getElementById('step-btn');
+      const keyVal  = unsorted.length > 0 ? unsorted[0] : null;
+
+      // --- Unsorted list ---
+      uList.innerHTML = '';
+      if (unsorted.length === 0) {
+        uList.innerHTML = '<span class="empty-msg">empty</span>';
+      } else {
+        unsorted.forEach((val, i) => {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          const num = document.createElement('div');
+          num.className = 'number';
+          num.textContent = val;
+
+          if (i === 0) {
+            num.classList.add(phase === 'inserting' ? 'will-move' : 'key');
+          }
+
+          // Arrow below the key only when idle (about to be picked)
+          const ptr = document.createElement('div');
+          ptr.className = 'pointer key-ptr';
+          if (i === 0 && phase === 'idle') ptr.textContent = '▲';
+
+          cell.appendChild(num);
+          cell.appendChild(ptr);
+          uList.appendChild(cell);
+        });
+      }
+
+      // --- Sorted list ---
+      sList.innerHTML = '';
+      if (sorted.length === 0) {
+        sList.innerHTML = '<span class="empty-msg">empty</span>';
+      } else {
+        sorted.forEach((val, i) => {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+
+          const num = document.createElement('div');
+          num.textContent = val;
+
+          if (phase === 'scanning') {
+            if (i === scanIdx) {
+              num.className = 'number compare';       // current comparison
+            } else if (i > scanIdx) {
+              num.className = 'number will-shift';    // already confirmed > key
+            } else {
+              num.className = 'number sorted-item';   // not yet reached
+            }
+          } else if (phase === 'inserting') {
+            // Show which elements will shift right to make room
+            num.className = i >= insertPos ? 'number will-shift' : 'number sorted-item';
+          } else {
+            num.className = 'number sorted-item';
+          }
+
+          // Hide landing slot during animation setup
+          if (opts.hideAt !== undefined && i === opts.hideAt) {
+            num.style.visibility = 'hidden';
+          }
+
+          // Arrow below the current comparison element in sorted
+          const ptr = document.createElement('div');
+          ptr.className = 'pointer compare-ptr';
+          if (phase === 'scanning' && i === scanIdx) ptr.textContent = '▲';
+
+          cell.appendChild(num);
+          cell.appendChild(ptr);
+          sList.appendChild(cell);
+        });
+      }
+
+      // --- Status bar ---
+      stat.className = 'status';
+      if (phase === 'done') {
+        stat.className = 'status complete';
+        stat.textContent = '✓ All done! The list is fully sorted.';
+        stepBtn.disabled = true;
+      } else if (phase === 'idle') {
+        stat.textContent = `Next to insert: ${keyVal}. Click Step to begin.`;
+        stepBtn.disabled = false;
+      } else if (phase === 'scanning') {
+        const cmp = sorted[scanIdx];
+        stat.textContent =
+          `Key: ${keyVal} — comparing with ${cmp} at index ${scanIdx}. Click Step.`;
+        stepBtn.disabled = false;
+      } else { // inserting
+        if (sorted.length === 0 || insertPos === 0) {
+          stat.textContent =
+            `${keyVal} is smaller than everything — goes at the front. Click Step to insert.`;
+        } else {
+          stat.textContent =
+            `${keyVal} goes after ${sorted[insertPos - 1]} (index ${insertPos}). Click Step to insert.`;
+        }
+        stepBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('step-btn').addEventListener('click', step);
+    document.getElementById('reset-btn').addEventListener('click', init);
+
+    init();
+  </script>
+</body>
+</html>
